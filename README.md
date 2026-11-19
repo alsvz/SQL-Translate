@@ -1,5 +1,4 @@
 # SQL-Translate
-project iseng aja
 ===========================
 # SQL ke Aljabar Relasional
 
