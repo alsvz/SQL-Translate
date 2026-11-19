@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 # SQL-Translate
 project iseng aja
-=======
+===========================
 # SQL ke Aljabar Relasional
 
 Aplikasi web sederhana untuk mengubah query SQL menjadi ekspresi aljabar relasional dan pohon operator secara langsung di browser.
