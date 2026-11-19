@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>SQL ke Aljabar Relasional</title>
+    <style>
+      :root {
+        --bg: #f5f5f7;
+        --card: #fff;
+        --ink: #1d1d1f;
+        --mut: #6e6e73;
+        --line: #d2d2d7;
+        --acc: #0066cc;
+        --err: #c4201a;
+        --chip: #ececf0;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #000;
+          --card: #1c1c1e;
+          --ink: #f5f5f7;
+          --mut: #98989d;
+          --line: #38383a;
+          --acc: #2997ff;
+          --err: #ff6961;
+          --chip: #2c2c2e;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #000;
+        --card: #1c1c1e;
+        --ink: #f5f5f7;
+        --mut: #98989d;
+        --line: #38383a;
+        --acc: #2997ff;
+        --err: #ff6961;
+        --chip: #2c2c2e;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          16px/1.5 -apple-system,
+          "SF Pro Display",
+          Inter,
+          "Segoe UI",
+          Roboto,
+          system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 56px 20px 72px;
+      }
+      h1 {
+        font-size: clamp(2rem, 6vw, 3.2rem);
+        line-height: 1.08;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        margin: 0 0 12px;
+      }
+      .sub {
+        color: var(--mut);
+        font-size: 1.15rem;
+        margin: 0 0 36px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 20px 22px;
+        margin-bottom: 16px;
+      }
+      h2 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 0 0 12px;
+      }
+      .hd {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .hd h2 {
+        margin: 0;
+      }
+      textarea {
+        width: 100%;
+        min-height: 128px;
+        resize: vertical;
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        font:
+          15px/1.6 ui-monospace,
+          "SF Mono",
+          Menlo,
+          Consolas,
+          monospace;
+        outline: none;
+        padding: 0;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+      }
+      button {
+        font: inherit;
+        font-size: 0.9rem;
+        color: var(--ink);
+        background: var(--chip);
+        border: 0;
+        border-radius: 999px;
+        padding: 6px 14px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      button:hover {
+        background: var(--line);
+      }
+      button:focus-visible,
+      textarea:focus-visible {
+        outline: 2px solid var(--acc);
+        outline-offset: 2px;
+      }
+      #err {
+        color: var(--err);
+        margin: 14px 0 0;
+        font-size: 0.95rem;
+      }
+      .formula {
+        font:
+          clamp(1.2rem, 3.2vw, 1.8rem) / 1.8 "Cambria Math",
+          "STIX Two Math",
+          "Latin Modern Math",
+          "Times New Roman",
+          serif;
+        overflow-x: auto;
+        padding: 6px 0;
+        white-space: nowrap;
+      }
+      .formula sub {
+        font-size: 0.62em;
+        vertical-align: -0.35em;
+      }
+      .formula div + div {
+        margin-top: 0.3em;
+      }
+      .tree,
+      .tree ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .tree ul {
+        margin-left: 14px;
+        padding-left: 18px;
+        border-left: 1px solid var(--line);
+      }
+      .tree li {
+        position: relative;
+        padding: 5px 0;
+      }
+      .tree ul > li::before {
+        content: "";
+        position: absolute;
+        left: -18px;
+        top: 23px;
+        width: 14px;
+        border-top: 1px solid var(--line);
+      }
+      .nd {
+        display: inline-flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 4px 10px;
+        padding: 7px 13px;
+        border-radius: 12px;
+        background: var(--bg);
+      }
+      .nd b {
+        font:
+          600 1.2rem "Cambria Math",
+          "STIX Two Math",
+          serif;
+        color: var(--acc);
+      }
+      .nd b.rel {
+        font:
+          600 0.95rem ui-monospace,
+          Menlo,
+          Consolas,
+          monospace;
+        color: var(--ink);
+      }
+      .nd code {
+        font:
+          0.88rem ui-monospace,
+          Menlo,
+          Consolas,
+          monospace;
+      }
+      .nd i {
+        font-style: normal;
+        color: var(--mut);
+        font-size: 0.82rem;
+      }
+      .note {
+        color: var(--mut);
+        font-size: 0.85rem;
+        margin: 28px 4px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>SQL ke aljabar relasional</h1>
+      <p class="sub">
+        Tulis query SELECT, ekspresi dan pohon operatornya langsung muncul.
+      </p>
+      <section class="card">
+        <textarea id="sql" spellcheck="false" aria-label="Query SQL"></textarea>
+        <div class="chips" id="chips"></div>
+        <p id="err" role="alert" hidden></p>
+      </section>
+      <div id="out">
+        <section class="card">
+          <div class="hd">
+            <h2>Ekspresi aljabar</h2>
+            <button id="cp">Salin</button>
+          </div>
+          <div class="formula" id="formula"></div>
+        </section>
+        <section class="card">
+          <h2>Pohon operator</h2>
+          <ul class="tree" id="tree"></ul>
+        </section>
+      </div>
+      <p class="note">
+        Didukung: SELECT, DISTINCT, JOIN (inner, left, right, full, natural,
+        cross), WHERE, GROUP BY, HAVING, ORDER BY, LIMIT/OFFSET, UNION,
+        INTERSECT, EXCEPT, WITH (CTE), CASE, CAST, serta IN, NOT IN, EXISTS di
+        WHERE. CTE dan subquery skalar ditulis sebagai definisi terpisah (S1,
+        S2, dan seterusnya) yang di-join ke query utama. SQL memakai bag
+        semantics (duplikat boleh), sedangkan aljabar relasional murni memakai
+        set.
+      </p>
+    </main>
+    <script>
+      const RES = new Set(
+        "SELECT FROM WHERE GROUP BY HAVING ORDER LIMIT UNION INTERSECT EXCEPT MINUS JOIN INNER LEFT RIGHT FULL CROSS NATURAL OUTER ON USING AS AND OR NOT IN IS NULL LIKE BETWEEN EXISTS DISTINCT ALL ASC DESC WHEN THEN ELSE END OFFSET WITH".split(
+          " ",
+        ),
+      );
+      const AGG = new Set(["COUNT", "SUM", "AVG", "MIN", "MAX"]);
+      const wrap = (x, p) => (x.p < p ? "(" + x.s + ")" : x.s);
+      const noSub = (x) => {
+        if (x.sub)
+          throw new Error(
+            "Subquery hanya didukung sebagai kondisi AND di WHERE (IN, NOT IN, EXISTS).",
+          );
+      };
+      const and = (c) =>
+        c.length === 1 ? c[0].s : c.map((x) => wrap(x, 3)).join(" ∧ ");
+
+      function lex(src) {
+        const re =
+          /\s+|--[^\n]*|('(?:[^']|'')*')|("[^"]*"|`[^`]*`)|(\d+(?:\.\d+)?)|([A-Za-z_][\w$]*)|(<>|!=|<=|>=|[(),.*=<>+\-\/%;])|([^])/y;
+        const out = [];
+        let m;
+        while (re.lastIndex < src.length && (m = re.exec(src))) {
+          if (m[1]) out.push({ t: "s", v: m[1] });
+          else if (m[2]) out.push({ t: "i", v: m[2].slice(1, -1) });
+          else if (m[3]) out.push({ t: "n", v: m[3] });
+          else if (m[4]) out.push({ t: "w", v: m[4], u: m[4].toUpperCase() });
+          else if (m[5]) out.push({ t: "o", v: m[5] });
+          else if (m[6])
+            throw new Error("Karakter tidak dikenali: “" + m[6] + "”");
+        }
+        return out;
+      }
+
+      class P {
+        constructor(t) {
+          this.t = t;
+          this.i = 0;
+          this.ag = null;
+          this.defs = [];
+          this.pend = [];
+          this.sc = 0;
+        }
+        get c() {
+          return this.t[this.i];
+        }
+        isW(u) {
+          const c = this.c;
+          return !!c && c.t === "w" && c.u === u;
+        }
+        isO(v) {
+          const c = this.c;
+          return !!c && c.t === "o" && c.v === v;
+        }
+        w(u) {
+          if (this.isW(u)) {
+            this.i++;
+            return true;
+          }
+          return false;
+        }
+        o(v) {
+          if (this.isO(v)) {
+            this.i++;
+            return true;
+          }
+          return false;
+        }
+        needW(u) {
+          if (!this.w(u)) this.fail("Diharapkan " + u);
+        }
+        needO(v) {
+          if (!this.o(v)) this.fail("Diharapkan “" + v + "”");
+        }
+        fail(m) {
+          const c = this.c;
+          throw new Error(
+            m +
+              (c
+                ? ", ditemukan “" + c.v + "”"
+                : ", tetapi query sudah berakhir"),
+          );
+        }
+        ident() {
+          const c = this.c;
+          if (c && (c.t === "i" || c.t === "w")) {
+            this.i++;
+            return c.v;
+          }
+          this.fail("Diharapkan sebuah nama");
+        }
+        canAlias() {
+          const c = this.c;
+          return !!c && (c.t === "i" || (c.t === "w" && !RES.has(c.u)));
+        }
+
+        top() {
+          if (this.w("WITH")) {
+            do {
+              const name = this.ident();
+              let cols = "";
+              if (this.o("(")) {
+                const c = [this.ident()];
+                while (this.o(",")) c.push(this.ident());
+                this.needO(")");
+                cols = "(" + c.join(", ") + ")";
+              }
+              this.needW("AS");
+              this.needO("(");
+              const q = this.query();
+              this.needO(")");
+              this.defs.push({ name, lab: name + cols, q });
+            } while (this.o(","));
+          }
+          const q = this.query();
+          this.o(";");
+          if (this.c) this.fail("Token tidak terduga");
+          return q;
+        }
+        query() {
+          let l = this.core();
+          for (;;) {
+            const u = this.c && this.c.t === "w" ? this.c.u : "";
+            if (!["UNION", "INTERSECT", "EXCEPT", "MINUS"].includes(u))
+              return l;
+            this.i++;
+            const all = this.w("ALL");
+            if (!all) this.w("DISTINCT");
+            const r = this.core();
+            l = {
+              k:
+                u === "UNION"
+                  ? "union"
+                  : u === "INTERSECT"
+                    ? "intersect"
+                    : "except",
+              p: all ? "ALL" : "",
+              ch: [l, r],
+              out: l.out,
+            };
+          }
+        }
+        core() {
+          if (this.o("(")) {
+            const q = this.query();
+            this.needO(")");
+            return q;
+          }
+          this.needW("SELECT");
+          const po = this.pend;
+          this.pend = [];
+          const dist = this.w("DISTINCT");
+          if (!dist) this.w("ALL");
+          const items = [];
+          do {
+            const e = this.isO("*") ? (this.i++, { s: "*", p: 9 }) : this.orE();
+            let a = "";
+            if (this.w("AS")) a = this.ident();
+            else if (e.s !== "*" && this.canAlias()) a = this.ident();
+            items.push({ e, a });
+          } while (this.o(","));
+          this.needW("FROM");
+          let n = this.tref();
+          while (this.o(",")) n = { k: "cross", p: "", ch: [n, this.tref()] };
+          const conj = [],
+            subs = [];
+          if (this.w("WHERE")) {
+            const e = this.orE();
+            for (const x of e.parts || [e]) (x.sub ? subs : conj).push(x);
+          }
+          const group = [];
+          if (this.w("GROUP")) {
+            this.needW("BY");
+            do group.push(this.orE().s);
+            while (this.o(","));
+          }
+          let having = null;
+          const hs = [];
+          if (this.w("HAVING")) {
+            this.ag = hs;
+            having = this.orE();
+            this.ag = null;
+          }
+          const order = [];
+          if (this.w("ORDER")) {
+            this.needW("BY");
+            do {
+              const e = this.orE();
+              order.push(
+                e.s + (this.w("DESC") ? " DESC" : (this.w("ASC"), "")),
+              );
+            } while (this.o(","));
+          }
+          let lim = null;
+          if (this.w("LIMIT")) {
+            const c = this.c;
+            if (!c || c.t !== "n") this.fail("LIMIT harus diikuti angka");
+            this.i++;
+            lim = c.v;
+            if (this.w("OFFSET")) {
+              const o = this.c;
+              if (!o || o.t !== "n") this.fail("OFFSET harus diikuti angka");
+              this.i++;
+              lim += " OFFSET " + o.v;
+            }
+          }
+          for (const s of this.pend)
+            n = { k: "cross", p: "", ch: [n, { k: "rel", p: s, ch: [] }] };
+          if (conj.length) n = { k: "sel", p: and(conj), ch: [n] };
+          for (const x of subs)
+            n = {
+              k: x.sub.neg ? "anti" : "semi",
+              p: x.sub.cond,
+              ch: [n, x.sub.q],
+            };
+          const label = (i) => i.e.s + (i.a ? "→" + i.a : "");
+          const aggs = items.filter((i) => i.e.agg),
+            ga = aggs.map(label);
+          for (const s of hs)
+            if (!aggs.some((i) => i.e.s === s) && !ga.includes(s)) ga.push(s);
+          const isAgg = group.length > 0 || ga.length > 0;
+          const pi = items.map(label);
+          if (isAgg) {
+            n = {
+              k: "grp",
+              p: (group.length ? group.join(", ") + "; " : "") + ga.join(", "),
+              ch: [n],
+            };
+            if (having) {
+              let h = having.s;
+              for (const i of aggs) if (i.a) h = h.split(i.e.s).join(i.a);
+              n = { k: "sel", p: h, ch: [n] };
+            }
+          }
+          const star = items.length === 1 && items[0].e.s === "*";
+          if (!star && !(isAgg && pi.join() === [...group, ...ga].join()))
+            n = { k: "proj", p: pi.join(", "), ch: [n] };
+          if (dist) n = { k: "dist", p: "", ch: [n] };
+          if (order.length) n = { k: "ord", p: order.join(", "), ch: [n] };
+          if (lim !== null) n = { k: "lim", p: lim, ch: [n] };
+          n.out = pi;
+          this.pend = po;
+          return n;
+        }
+        tref() {
+          let l = this.prim();
+          for (;;) {
+            const s = this.i;
+            let kind = "inner";
+            const nat = this.w("NATURAL");
+            if (this.w("CROSS")) kind = "cross";
+            else if (this.w("INNER"));
+            else
+              for (const [x, k] of [
+                ["LEFT", "left"],
+                ["RIGHT", "right"],
+                ["FULL", "full"],
+              ])
+                if (this.w(x)) {
+                  kind = k;
+                  this.w("OUTER");
+                  break;
+                }
+            if (!this.w("JOIN")) {
+              if (this.i !== s) this.fail("Diharapkan JOIN");
+              return l;
+            }
+            const r = this.prim();
+            let p = "";
+            if (nat) {
+              if (kind === "inner") kind = "natural";
+              else p = "NATURAL";
+            }
+            if (this.w("ON")) p = this.orE().s;
+            else if (this.w("USING")) {
+              this.needO("(");
+              const c = [this.ident()];
+              while (this.o(",")) c.push(this.ident());
+              this.needO(")");
+              p = c.join(", ");
+            }
+            l = { k: kind, p, ch: [l, r] };
+          }
+        }
+        prim() {
+          let n;
+          if (this.o("(")) {
+            if (this.isW("SELECT") || this.isO("(")) {
+              n = this.query();
+              this.needO(")");
+            } else {
+              n = this.tref();
+              this.needO(")");
+            }
+          } else {
+            let name = this.ident();
+            while (this.o(".")) name += "." + this.ident();
+            n = { k: "rel", p: name, ch: [] };
+          }
+          let a = "";
+          if (this.w("AS")) a = this.ident();
+          else if (this.canAlias()) a = this.ident();
+          return a ? { k: "ren", p: a, ch: [n] } : n;
+        }
+
+        orE() {
+          const a = [this.andE()];
+          while (this.w("OR")) a.push(this.andE());
+          if (a.length === 1) return a[0];
+          a.forEach(noSub);
+          return { s: a.map((x) => x.s).join(" ∨ "), p: 1 };
+        }
+        andE() {
+          const a = [this.notE()];
+          while (this.w("AND")) a.push(this.notE());
+          if (a.length === 1) return a[0];
+          return {
+            s: a.map((x) => wrap(x, 3)).join(" ∧ "),
+            p: 3,
+            parts: a.flatMap((x) => x.parts || [x]),
+          };
+        }
+        notE() {
+          if (this.w("NOT")) {
+            if (this.isW("EXISTS")) return this.exists(true);
+            const x = this.notE();
+            noSub(x);
+            return { s: "¬(" + x.s + ")", p: 9 };
+          }
+          return this.isW("EXISTS") ? this.exists(false) : this.pred();
+        }
+        exists(neg) {
+          this.needW("EXISTS");
+          this.needO("(");
+          const q = this.query();
+          this.needO(")");
+          return { s: "EXISTS", p: 4, sub: { neg, cond: "", q } };
+        }
+        pred() {
+          const l = this.add();
+          let neg = false;
+          if (this.w("IS")) {
+            const n = this.w("NOT");
+            this.needW("NULL");
+            return { s: l.s + " IS " + (n ? "NOT " : "") + "NULL", p: 4 };
+          }
+          const nx = this.t[this.i + 1];
+          if (
+            this.isW("NOT") &&
+            nx &&
+            ["IN", "BETWEEN", "LIKE"].includes(nx.u)
+          ) {
+            this.i++;
+            neg = true;
+          }
+          if (this.w("IN")) {
+            this.needO("(");
+            if (this.isW("SELECT")) {
+              const q = this.query();
+              this.needO(")");
+              return {
+                s: "IN",
+                p: 4,
+                sub: { neg, cond: l.s + " = " + q.out[0], q },
+              };
+            }
+            const v = [this.add().s];
+            while (this.o(",")) v.push(this.add().s);
+            this.needO(")");
+            return {
+              s: l.s + (neg ? " ∉ " : " ∈ ") + "{" + v.join(", ") + "}",
+              p: 4,
+            };
+          }
+          if (this.w("BETWEEN")) {
+            const a = this.add();
+            this.needW("AND");
+            const b = this.add();
+            const s =
+              wrap(l, 5) +
+              " ≥ " +
+              wrap(a, 5) +
+              " ∧ " +
+              wrap(l, 5) +
+              " ≤ " +
+              wrap(b, 5);
+            return neg ? { s: "¬(" + s + ")", p: 9 } : { s, p: 3 };
+          }
+          if (this.w("LIKE")) {
+            const r = this.add();
+            return { s: l.s + (neg ? " NOT LIKE " : " LIKE ") + r.s, p: 4 };
+          }
+          const c = this.c;
+          if (
+            c &&
+            c.t === "o" &&
+            ["=", "<>", "!=", "<", ">", "<=", ">="].includes(c.v)
+          ) {
+            this.i++;
+            const r = this.add();
+            const op =
+              { "<>": "≠", "!=": "≠", "<=": "≤", ">=": "≥" }[c.v] || c.v;
+            return { s: wrap(l, 5) + " " + op + " " + wrap(r, 5), p: 4 };
+          }
+          return l;
+        }
+        add() {
+          let l = this.mul();
+          while (this.isO("+") || this.isO("-")) {
+            const o = this.c.v;
+            this.i++;
+            const r = this.mul();
+            l = {
+              s: wrap(l, 5) + " " + o + " " + wrap(r, 6),
+              p: 5,
+              agg: l.agg || r.agg,
+            };
+          }
+          return l;
+        }
+        mul() {
+          let l = this.un();
+          while (this.isO("*") || this.isO("/") || this.isO("%")) {
+            const o = this.c.v;
+            this.i++;
+            const r = this.un();
+            l = {
+              s: wrap(l, 6) + " " + o + " " + wrap(r, 7),
+              p: 6,
+              agg: l.agg || r.agg,
+            };
+          }
+          return l;
+        }
+        un() {
+          if (this.o("-")) {
+            const x = this.un();
+            return { s: "-" + wrap(x, 7), p: 7, agg: x.agg };
+          }
+          return this.atom();
+        }
+        atom() {
+          const c = this.c;
+          if (!c) this.fail("Ekspresi belum lengkap");
+          if (c.t === "n" || c.t === "s") {
+            this.i++;
+            return { s: c.v, p: 9 };
+          }
+          if (this.o("(")) {
+            if (this.isW("SELECT")) {
+              const q = this.query();
+              this.needO(")");
+              const nm = "S" + ++this.sc;
+              this.defs.push({ name: nm, lab: nm, q });
+              this.pend.push(nm);
+              return { s: nm, p: 9 };
+            }
+            const e = this.orE();
+            this.needO(")");
+            return e;
+          }
+          if (c.t === "w" && c.u === "CASE") {
+            this.i++;
+            let s = "CASE",
+              ag = false;
+            if (!this.isW("WHEN")) {
+              const b = this.orE();
+              s += " " + b.s;
+              ag = ag || !!b.agg;
+            }
+            while (this.w("WHEN")) {
+              const a = this.orE();
+              this.needW("THEN");
+              const b = this.orE();
+              s += " WHEN " + a.s + " THEN " + b.s;
+              ag = ag || !!(a.agg || b.agg);
+            }
+            if (this.w("ELSE")) {
+              const e = this.orE();
+              s += " ELSE " + e.s;
+              ag = ag || !!e.agg;
+            }
+            this.needW("END");
+            return { s: s + " END", p: 9, agg: ag };
+          }
+          const nx = this.t[this.i + 1];
+          if (
+            c.t === "w" &&
+            RES.has(c.u) &&
+            c.u !== "NULL" &&
+            !(nx && nx.v === "(")
+          )
+            this.fail("Ekspresi tidak valid");
+          if (c.t === "w" || c.t === "i") {
+            this.i++;
+            let n = c.v;
+            if (c.t === "w" && this.isO("(")) {
+              this.i++;
+              const d = this.w("DISTINCT") ? "DISTINCT " : "",
+                a = [];
+              if (this.isO("*")) {
+                this.i++;
+                a.push("*");
+              } else if (!this.isO(")")) {
+                do {
+                  let x = this.orE().s;
+                  if (this.w("AS")) {
+                    x += " AS " + this.ident();
+                    if (this.o("(")) {
+                      while (this.c && !this.o(")")) this.i++;
+                    }
+                  }
+                  a.push(x);
+                } while (this.o(","));
+              }
+              this.needO(")");
+              const s = c.u + "(" + d + a.join(", ") + ")",
+                ag = AGG.has(c.u);
+              if (ag && this.ag) this.ag.push(s);
+              return { s, p: 9, agg: ag };
+            }
+            while (this.o(".")) {
+              if (this.o("*")) {
+                n += ".*";
+                break;
+              }
+              n += "." + this.ident();
+            }
+            return { s: n, p: 9 };
+          }
+          this.fail("Ekspresi tidak valid");
+        }
+      }
+
+      const SYM = {
+        ren: "ρ",
+        sel: "σ",
+        proj: "π",
+        grp: "γ",
+        dist: "δ",
+        ord: "τ",
+        lim: "λ",
+        cross: "×",
+        inner: "⨝",
+        natural: "⨝",
+        left: "⟕",
+        right: "⟖",
+        full: "⟗",
+        semi: "⋉",
+        anti: "▷",
+        union: "∪",
+        intersect: "∩",
+        except: "−",
+      };
+      const NAME = {
+        ren: "Rename",
+        sel: "Seleksi",
+        proj: "Proyeksi",
+        grp: "Agregasi",
+        dist: "Hapus duplikat",
+        ord: "Urutkan",
+        lim: "Batasi baris",
+        cross: "Cartesian product",
+        inner: "Theta join",
+        natural: "Natural join",
+        left: "Left outer join",
+        right: "Right outer join",
+        full: "Full outer join",
+        semi: "Semijoin",
+        anti: "Antijoin",
+        union: "Union",
+        intersect: "Irisan",
+        except: "Selisih",
+      };
+      const BIN = new Set([
+        "cross",
+        "inner",
+        "natural",
+        "left",
+        "right",
+        "full",
+        "semi",
+        "anti",
+        "union",
+        "intersect",
+        "except",
+      ]);
+      const esc = (s) =>
+        String(s).replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+
+      function fmt(n, top, h) {
+        const sub = (s) =>
+          s === "" ? "" : h ? "<sub>" + esc(s) + "</sub>" : "_{" + s + "}";
+        if (n.k === "rel") return h ? esc(n.p) : n.p;
+        const y = SYM[n.k];
+        if (BIN.has(n.k)) {
+          const s =
+            fmt(n.ch[0], 0, h) + " " + y + sub(n.p) + " " + fmt(n.ch[1], 0, h);
+          return top ? s : "(" + s + ")";
+        }
+        return y + sub(n.p) + "(" + fmt(n.ch[0], 1, h) + ")";
+      }
+      function tree(n) {
+        const head =
+          n.k === "rel"
+            ? '<b class="rel">' + esc(n.p) + "</b><i>Relasi</i>"
+            : "<b>" +
+              SYM[n.k] +
+              "</b>" +
+              (n.p !== "" ? "<code>" + esc(n.p) + "</code>" : "") +
+              "<i>" +
+              NAME[n.k] +
+              "</i>";
+        return (
+          '<li><div class="nd">' +
+          head +
+          "</div>" +
+          (n.ch.length ? "<ul>" + n.ch.map(tree).join("") + "</ul>" : "") +
+          "</li>"
+        );
+      }
+
+      const EX = [
+        ["Dasar", "SELECT nama FROM mahasiswa WHERE ipk > 3.5"],
+        [
+          "JOIN",
+          "SELECT m.nama, k.kode_mk FROM mahasiswa m JOIN krs k ON m.nim = k.nim WHERE k.nilai = 'A'",
+        ],
+        [
+          "GROUP BY",
+          "SELECT jurusan, AVG(ipk) AS rata FROM mahasiswa GROUP BY jurusan HAVING AVG(ipk) > 3 ORDER BY rata DESC",
+        ],
+        [
+          "UNION",
+          "SELECT nim FROM krs WHERE kode_mk = 'IF101' UNION SELECT nim FROM krs WHERE kode_mk = 'IF102'",
+        ],
+        [
+          "Subquery",
+          "SELECT nama FROM mahasiswa WHERE nim IN (SELECT nim FROM krs WHERE nilai = 'A')",
+        ],
+      ];
+      const $ = (id) => document.getElementById(id);
+      let plain = "";
+
+      function run() {
+        const src = $("sql").value.trim(),
+          err = $("err");
+        err.hidden = true;
+        $("out").hidden = false;
+        if (!src) {
+          $("out").hidden = true;
+          return;
+        }
+        try {
+          const p = new P(lex(src));
+          const q = p.top(),
+            D = p.defs;
+          const L = (d, h) => (h ? esc(d.lab) : d.lab) + " ← " + fmt(d.q, 1, h);
+          $("formula").innerHTML =
+            D.map((d) => "<div>" + L(d, 1) + "</div>").join("") +
+            "<div>" +
+            fmt(q, 1, true) +
+            "</div>";
+          $("tree").innerHTML = D.length
+            ? D.map(
+                (d) =>
+                  '<li><div class="nd"><b>←</b><code>' +
+                  esc(d.lab) +
+                  "</code><i>Definisi</i></div><ul>" +
+                  tree(d.q) +
+                  "</ul></li>",
+              ).join("") +
+              '<li><div class="nd"><i>Query utama</i></div><ul>' +
+              tree(q) +
+              "</ul></li>"
+            : tree(q);
+          plain =
+            D.map((d) => L(d, 0)).join("\n") +
+            (D.length ? "\n" : "") +
+            fmt(q, 1, false);
+        } catch (e) {
+          $("out").hidden = true;
+          err.hidden = false;
+          err.textContent = e.message;
+        }
+      }
+      $("chips").innerHTML = EX.map(
+        (e, i) => '<button data-i="' + i + '">' + e[0] + "</button>",
+      ).join("");
+      $("chips").onclick = (e) => {
+        const i = e.target.dataset.i;
+        if (i !== undefined) {
+          $("sql").value = EX[i][1];
+          run();
+        }
+      };
+      $("sql").oninput = run;
+      $("cp").onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(plain);
+        } catch (_) {
+          const t = document.createElement("textarea");
+          t.value = plain;
+          document.body.appendChild(t);
+          t.select();
+          try {
+            document.execCommand("copy");
+          } catch (__) {}
+          t.remove();
+        }
+        $("cp").textContent = "Tersalin";
+        setTimeout(() => ($("cp").textContent = "Salin"), 1400);
+      };
+      $("sql").value = EX[0][1];
+      run();
+    </script>
+  </body>
+</html>
